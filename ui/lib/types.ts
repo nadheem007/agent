@@ -108,7 +108,6 @@
 
 
 
-
 export interface Message {
   id: string
   content: string
@@ -162,8 +161,9 @@ export interface CustomerDetails {
   name?: string;
   account_number?: string;
   email?: string;
-  is_conference_attendee?: boolean; // NEW: Add conference attendee flag
-  conference_name?: string; // NEW: Add conference name
+  is_conference_attendee?: boolean;
+  conference_name?: string;
+  registration_id?: string; // NEW: Add registration_id field
 }
 
 export interface BookingDetails {

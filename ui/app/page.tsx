@@ -345,14 +345,13 @@
 
 
 
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { AgentPanel } from "../components/agent-panel";
 import { Chat } from "../components/Chat";
 import { CustomerLogin } from "../components/customer-login";
-import type { Agent, AgentEvent, GuardrailCheck, Message, ChatResponse, CustomerInfoResponse } from "@/lib/types"; // Import CustomerInfoResponse and ChatResponse
+import type { Agent, AgentEvent, GuardrailCheck, Message, ChatResponse, CustomerInfoResponse } from "@/lib/types";
 import { callChatAPI } from "../lib/api";
 
 export default function Home() {
@@ -367,19 +366,18 @@ export default function Home() {
   
   // Customer authentication state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfoResponse | null>(null); // Use the specific type
-  const [accountNumber, setAccountNumber] = useState<string>("");
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfoResponse | null>(null);
+  const [loginIdentifier, setLoginIdentifier] = useState<string>("");
+  const [loginType, setLoginType] = useState<'customer' | 'user'>('user');
 
   // Handle customer login
-  const handleLogin = async (accNumber: string, custInfoFromLogin: any) => { // Renamed param to avoid confusion
-    setAccountNumber(accNumber);
-    // You could set a basic customerInfo here from login form if needed immediately
-    // setCustomerInfo({ customer: custInfoFromLogin, bookings: [] }); 
-
+  const handleLogin = async (identifier: string, userData: any, type: 'customer' | 'user') => {
+    setLoginIdentifier(identifier);
+    setLoginType(type);
     setIsLoggedIn(true);
 
-    // Initialize conversation with customer context - this call returns the full customer_info from backend
-    const data: ChatResponse = await callChatAPI("", "", accNumber); // Specify ChatResponse type
+    // Initialize conversation with customer/user context
+    const data: ChatResponse = await callChatAPI("", "", type === 'customer' ? identifier : undefined, type === 'user' ? identifier : undefined);
     
     if (data) {
       setConversationId(data.conversation_id);
@@ -405,23 +403,30 @@ export default function Home() {
         );
       }
 
-      // --- CRITICAL FIX: Update customerInfo state with the complete data from the API response ---
+      // Update customerInfo state with the complete data from the API response
       if (data.customer_info) {
-        setCustomerInfo(data.customer_info); // Use the data from the API which has email and bookings
+        setCustomerInfo(data.customer_info);
       } else {
-        setCustomerInfo(null); // Clear if no customer_info is returned
+        setCustomerInfo(null);
       }
-      // --- END CRITICAL FIX ---
 
-      // Add welcome message with customer info
+      // Add welcome message with customer/user info
+      let welcomeName = "Customer";
+      if (type === 'customer') {
+        welcomeName = userData.name || "Customer";
+      } else {
+        const details = userData.details || {};
+        welcomeName = details.user_name || `${details.firstName || ''} ${details.lastName || ''}`.trim() || "Customer";
+      }
+
       const welcomeMessage: Message = {
         id: Date.now().toString(),
-        content: `Welcome back, ${data.customer_info?.customer?.name || custInfoFromLogin.name || "Customer"}! I can help you with your bookings, flight status, seat changes, and more. How can I assist you today?`,
+        content: `Welcome back, ${welcomeName}! I can help you with ${type === 'customer' ? 'your bookings, flight status, seat changes, and' : 'conference schedules, speakers, sessions, and'} more. How can I assist you today?`,
         role: "assistant",
         agent: "Triage Agent",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, welcomeMessage]); // Add welcome message to existing messages
+      setMessages((prev) => [...prev, welcomeMessage]);
     }
   };
 
@@ -437,7 +442,12 @@ export default function Home() {
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
-    const data: ChatResponse = await callChatAPI(content, conversationId ?? "", accountNumber); // Specify ChatResponse type
+    const data: ChatResponse = await callChatAPI(
+      content, 
+      conversationId ?? "", 
+      loginType === 'customer' ? loginIdentifier : undefined,
+      loginType === 'user' ? loginIdentifier : undefined
+    );
 
     if (!data) {
       console.error("Chat API call returned no data for message:", content);
@@ -466,13 +476,12 @@ export default function Home() {
     if (data.agents) setAgents(data.agents);
     if (data.guardrails) setGuardrails(data.guardrails);
 
-    // --- CRITICAL FIX: Update customerInfo state with the complete data from the API response on every message ---
+    // Update customerInfo state with the complete data from the API response on every message
     if (data.customer_info) {
       setCustomerInfo(data.customer_info);
     } else {
-      setCustomerInfo(null); // Clear if no customer_info is returned
+      setCustomerInfo(null);
     }
-    // --- END CRITICAL FIX ---
 
     if (data.messages) {
       const responses: Message[] = data.messages.map((m: any) => ({
@@ -501,13 +510,13 @@ export default function Home() {
         events={events}
         guardrails={guardrails}
         context={context}
-        customerInfo={customerInfo} // This is correctly passed
+        customerInfo={customerInfo}
       />
       <Chat
         messages={messages}
         onSendMessage={handleSendMessage}
         isLoading={isLoading}
-        customerInfo={customerInfo} // Pass customerInfo to Chat as well if needed
+        customerInfo={customerInfo}
       />
     </main>
   );

@@ -209,8 +209,6 @@
 
 
 
-
-
 import os
 from supabase import create_client, Client
 from typing import Optional, Dict, Any, List
@@ -230,11 +228,32 @@ class SupabaseClient:
         self.supabase: Client = create_client(url, key)
         logger.info("Supabase client initialized.")
     
+    async def get_user_by_registration_id(self, registration_id: str) -> Optional[Dict[str, Any]]:
+        """Get user details by registration_id from the users table."""
+        try:
+            logger.debug(f"Querying users table for registration_id: '{registration_id}'")
+            
+            # Query users table where details->registration_id matches the provided registration_id
+            response = self.supabase.table("users").select("*").execute()
+            
+            if response.data:
+                # Filter users by registration_id in details JSON
+                for user in response.data:
+                    details = user.get("details", {})
+                    if isinstance(details, dict) and str(details.get("registration_id")) == str(registration_id):
+                        logger.debug(f"Found user for registration_id: {registration_id}")
+                        return user
+            
+            logger.debug(f"No user found for registration_id: {registration_id}")
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching user with registration_id {registration_id}: {e}", exc_info=True)
+            return None
+
     async def get_customer_by_account_number(self, account_number: str) -> Optional[Dict[str, Any]]:
         """Get customer details by account number, including conference info."""
         try:
             logger.debug(f"Querying customers table for account_number: '{account_number}'")
-            # Select all fields, including new conference-related ones
             response = self.supabase.table("customers").select("*").eq("account_number", account_number).execute()
             logger.debug(f"Supabase response data: {response.data}")
             
@@ -329,7 +348,6 @@ class SupabaseClient:
             logger.error(f"Error fetching bookings for customer ID {customer_id}: {e}", exc_info=True)
             return []
 
-    # --- NEW METHODS FOR CONFERENCE SCHEDULE ---
     async def get_conference_schedule(
         self,
         speaker_name: Optional[str] = None,
@@ -356,13 +374,13 @@ class SupabaseClient:
             if track_name:
                 query = query.ilike("track_name", f"%{track_name}%")
             if conference_date:
-                query = query.eq("conference_date", conference_date.isoformat()) # Convert date to ISO string
+                query = query.eq("conference_date", conference_date.isoformat())
             if time_range_start:
-                query = query.gte("start_time", time_range_start.isoformat()) # Convert datetime to ISO string
+                query = query.gte("start_time", time_range_start.isoformat())
             if time_range_end:
-                query = query.lte("end_time", time_range_end.isoformat()) # Convert datetime to ISO string
+                query = query.lte("end_time", time_range_end.isoformat())
 
-            response = query.order("start_time").execute() # Order by time for better readability
+            response = query.order("start_time").execute()
             
             if response.data:
                 logger.debug(f"Found {len(response.data)} conference sessions.")
@@ -372,20 +390,52 @@ class SupabaseClient:
         except Exception as e:
             logger.error(f"Error fetching conference schedule: {e}", exc_info=True)
             return []
-    # --- END NEW METHODS ---
+
+    async def get_all_speakers(self) -> List[str]:
+        """Get all unique speakers from conference_schedules."""
+        try:
+            response = self.supabase.table("conference_schedules").select("speaker_name").execute()
+            if response.data:
+                speakers = list(set([item["speaker_name"] for item in response.data]))
+                speakers.sort()
+                logger.debug(f"Found {len(speakers)} unique speakers.")
+                return speakers
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching speakers: {e}", exc_info=True)
+            return []
+
+    async def get_all_tracks(self) -> List[str]:
+        """Get all unique tracks from conference_schedules."""
+        try:
+            response = self.supabase.table("conference_schedules").select("track_name").execute()
+            if response.data:
+                tracks = list(set([item["track_name"] for item in response.data]))
+                tracks.sort()
+                logger.debug(f"Found {len(tracks)} unique tracks.")
+                return tracks
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching tracks: {e}", exc_info=True)
+            return []
+
+    async def get_all_rooms(self) -> List[str]:
+        """Get all unique rooms from conference_schedules."""
+        try:
+            response = self.supabase.table("conference_schedules").select("conference_room_name").execute()
+            if response.data:
+                rooms = list(set([item["conference_room_name"] for item in response.data]))
+                rooms.sort()
+                logger.debug(f"Found {len(rooms)} unique rooms.")
+                return rooms
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching rooms: {e}", exc_info=True)
+            return []
 
     async def get_customer_bookings(self, account_number: str) -> List[Dict[str, Any]]:
-        """
-        [NOTE: This method might not be correctly configured for Supabase RLS policies
-        or table relationships if 'customers.account_number' is not directly queryable
-        through the 'bookings' table for security reasons. 
-        'get_bookings_by_customer_id' is generally more robust.]
-
-        Get all bookings for a customer by their account number.
-        """
+        """Get all bookings for a customer by their account number."""
         try:
-            # This query assumes a direct join or RLS setup that allows filtering
-            # bookings by a customer's account_number through a foreign key relationship.
             response = self.supabase.table("bookings").select("""
                 *,
                 flights:flight_id(*)

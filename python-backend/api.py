@@ -539,7 +539,6 @@
 
 
 
-
 import sys
 import os
 import logging
@@ -576,10 +575,11 @@ from main import (
     seat_booking_agent,
     flight_status_agent,
     cancellation_agent,
-    faq_agent, # --- Ensure faq_agent is imported ---
-    schedule_agent, # --- NEW: Import schedule_agent ---
+    faq_agent,
+    schedule_agent,
     create_initial_context,
     load_customer_context,
+    load_user_context,
     AirlineAgentContext,
 )
 
@@ -602,6 +602,7 @@ class ChatRequest(BaseModel):
     conversation_id: Optional[str] = None
     message: str
     account_number: Optional[str] = None
+    registration_id: Optional[str] = None
 
 class MessageResponse(BaseModel):
     content: str
@@ -627,8 +628,9 @@ class CustomerDetails(BaseModel):
     name: Optional[str] = None
     account_number: Optional[str] = None
     email: Optional[str] = None
-    is_conference_attendee: Optional[bool] = None # --- NEW: Add conference fields ---
-    conference_name: Optional[str] = None # --- NEW: Add conference fields ---
+    is_conference_attendee: Optional[bool] = None
+    conference_name: Optional[str] = None
+    registration_id: Optional[str] = None
 
 class BookingDetails(BaseModel):
     id: str
@@ -638,7 +640,6 @@ class CustomerInfoResponse(BaseModel):
     customer: Optional[CustomerDetails] = None
     bookings: List[BookingDetails] = []
     current_booking: Optional[Dict[str, Any]] = None
-
 
 class ChatResponse(BaseModel):
     conversation_id: str
@@ -713,8 +714,8 @@ def get_agent_by_name(name: str):
         seat_booking_agent.name: seat_booking_agent,
         flight_status_agent.name: flight_status_agent,
         cancellation_agent.name: cancellation_agent,
-        faq_agent.name: faq_agent, # --- Ensure faq_agent is included ---
-        schedule_agent.name: schedule_agent, # --- NEW: Add schedule_agent ---
+        faq_agent.name: faq_agent,
+        schedule_agent.name: schedule_agent,
     }
     return agents.get(name, triage_agent)
 
@@ -736,8 +737,8 @@ def build_agents_list() -> List[Dict[str, Any]]:
         seat_booking_agent,
         flight_status_agent,
         cancellation_agent,
-        faq_agent, # --- Ensure faq_agent is included ---
-        schedule_agent, # --- NEW: Add schedule_agent to the list ---
+        faq_agent,
+        schedule_agent,
     ]
     def make_agent_dict(agent):
         handoff_names = []
@@ -758,6 +759,19 @@ def build_agents_list() -> List[Dict[str, Any]]:
             "input_guardrails": input_guardrail_names,
         }
     return [make_agent_dict(agent) for agent in all_agents]
+
+@app.get("/user/{registration_id}", response_model=Dict[str, Any])
+async def get_user(registration_id: str):
+    try:
+        user = await db_client.get_user_by_registration_id(registration_id)
+        if not user:
+            logger.debug(f"No user found for registration_id: {registration_id}")
+            raise HTTPException(status_code=404, detail=f"User with registration_id {registration_id} not found")
+        logger.debug(f"Returning user data for {registration_id}: {user}")
+        return user
+    except Exception as e:
+        logger.error(f"Error fetching user {registration_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/customer/{account_number}", response_model=Dict[str, Any])
 async def get_customer(account_number: str):
@@ -793,7 +807,12 @@ async def chat_endpoint(req: ChatRequest):
             logger.debug(f"Resuming existing conversation {conversation_id} with agent {state['current_agent']}")
         else:
             conversation_id = uuid4().hex
-            if req.account_number:
+            
+            # Load context based on registration_id or account_number
+            if req.registration_id:
+                state["context"] = await load_user_context(req.registration_id)
+                logger.info(f"New conversation {conversation_id}. Loaded user context for registration_id: {req.registration_id}")
+            elif req.account_number:
                 state["context"] = await load_customer_context(req.account_number)
                 logger.info(f"New conversation {conversation_id}. Loaded customer context for account: {req.account_number}")
             else:
@@ -801,14 +820,15 @@ async def chat_endpoint(req: ChatRequest):
                 logger.info(f"New conversation {conversation_id}. Created initial context.")
             
             customer_info_response = None
-            if state["context"].account_number:
+            if state["context"].registration_id or state["context"].account_number:
                 customer_info_response = CustomerInfoResponse(
                     customer=CustomerDetails(
                         name=state["context"].passenger_name,
                         account_number=state["context"].account_number,
                         email=state["context"].customer_email,
-                        is_conference_attendee=state["context"].is_conference_attendee, # --- NEW: Pass conference fields ---
-                        conference_name=state["context"].conference_name, # --- NEW: Pass conference fields ---
+                        is_conference_attendee=state["context"].is_conference_attendee,
+                        conference_name=state["context"].conference_name,
+                        registration_id=state["context"].registration_id,
                     ),
                     bookings=[BookingDetails(**b) for b in state["context"].customer_bookings] if state["context"].customer_bookings else []
                 )
@@ -937,14 +957,15 @@ async def chat_endpoint(req: ChatRequest):
             )
         
         customer_info_response = None
-        if state["context"].account_number:
+        if state["context"].registration_id or state["context"].account_number:
             customer_info_response = CustomerInfoResponse(
                 customer=CustomerDetails(
                     name=state["context"].passenger_name,
                     account_number=state["context"].account_number,
                     email=state["context"].customer_email,
-                    is_conference_attendee=state["context"].is_conference_attendee, # --- NEW: Pass conference fields ---
-                    conference_name=state["context"].conference_name, # --- NEW: Pass conference fields ---
+                    is_conference_attendee=state["context"].is_conference_attendee,
+                    conference_name=state["context"].conference_name,
+                    registration_id=state["context"].registration_id,
                 ),
                 bookings=[BookingDetails(**b) for b in state["context"].customer_bookings] if state["context"].customer_bookings else []
             )
@@ -987,20 +1008,21 @@ async def chat_endpoint(req: ChatRequest):
                 )
             )
 
-        refusal = "Sorry, I can only answer questions related to airline travel and the conference. Your message was flagged as irrelevant/unsafe."
+        refusal = "I can only assist with airline travel services and conference information. Your message was flagged as outside my area of expertise. Please ask about flights, bookings, seat changes, cancellations, or conference schedules."
         state["input_items"].append({"role": "assistant", "content": refusal})
         
         await conversation_store.save(conversation_id, state)
 
         customer_info_response = None
-        if state["context"].account_number:
+        if state["context"].registration_id or state["context"].account_number:
             customer_info_response = CustomerInfoResponse(
                 customer=CustomerDetails(
                     name=state["context"].passenger_name,
                     account_number=state["context"].account_number,
                     email=state["context"].customer_email,
-                    is_conference_attendee=state["context"].is_conference_attendee, # --- NEW: Pass conference fields ---
-                    conference_name=state["context"].conference_name, # --- NEW: Pass conference fields ---
+                    is_conference_attendee=state["context"].is_conference_attendee,
+                    conference_name=state["context"].conference_name,
+                    registration_id=state["context"].registration_id,
                 ),
                 bookings=[BookingDetails(**b) for b in state["context"].customer_bookings] if state["context"].customer_bookings else []
             )

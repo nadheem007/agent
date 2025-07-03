@@ -116,7 +116,6 @@
 
 
 
-
 "use client";
 
 import { Bot, User } from "lucide-react";
@@ -138,16 +137,17 @@ interface AgentPanelProps {
     seat_number?: string;
     flight_number?: string;
     account_number?: string;
-    // Add new context fields here if they are directly used from the context prop
-    // However, for customer details, we primarily use customerInfo prop
+    registration_id?: string;
+    user_details?: Record<string, any>;
   };
   customerInfo?: {
     customer?: {
       name?: string;
       account_number?: string;
       email?: string;
-      is_conference_attendee?: boolean; // NEW: Add to prop interface
-      conference_name?: string; // NEW: Add to prop interface
+      is_conference_attendee?: boolean;
+      conference_name?: string;
+      registration_id?: string;
     };
     bookings: {
       id: string;
@@ -185,7 +185,7 @@ export function AgentPanel({
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2 text-blue-800">
                   <User className="h-4 w-4" />
-                  Customer Information
+                  {customerInfo.customer?.registration_id ? 'Conference User Information' : 'Customer Information'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
@@ -194,15 +194,26 @@ export function AgentPanel({
                     <span className="text-blue-600 font-medium">Name:</span>{" "}
                     <span className="text-gray-800">{customerInfo.customer?.name}</span>
                   </div>
-                  <div>
-                    <span className="text-blue-600 font-medium">Account:</span>{" "}
-                    <span className="text-gray-800">{customerInfo.customer?.account_number}</span>
-                  </div>
+                  
+                  {customerInfo.customer?.account_number && (
+                    <div>
+                      <span className="text-blue-600 font-medium">Account:</span>{" "}
+                      <span className="text-gray-800">{customerInfo.customer.account_number}</span>
+                    </div>
+                  )}
+                  
+                  {customerInfo.customer?.registration_id && (
+                    <div>
+                      <span className="text-blue-600 font-medium">Registration ID:</span>{" "}
+                      <span className="text-gray-800">{customerInfo.customer.registration_id}</span>
+                    </div>
+                  )}
+                  
                   <div className="col-span-2">
                     <span className="text-blue-600 font-medium">Email:</span>{" "}
                     <span className="text-gray-800">{customerInfo.customer?.email}</span>
                   </div>
-                  {/* NEW: Display Conference Attendee Info */}
+                  
                   {customerInfo.customer?.is_conference_attendee !== undefined && (
                     <div className="col-span-2">
                       <span className="text-blue-600 font-medium">Conference Attendee:</span>{" "}
@@ -211,17 +222,20 @@ export function AgentPanel({
                       </span>
                     </div>
                   )}
+                  
                   {customerInfo.customer?.is_conference_attendee && customerInfo.customer?.conference_name && (
                     <div className="col-span-2">
-                      <span className="text-blue-600 font-medium">Conference Name:</span>{" "}
+                      <span className="text-blue-600 font-medium">Conference:</span>{" "}
                       <span className="text-gray-800">{customerInfo.customer.conference_name}</span>
                     </div>
                   )}
-                  {/* END NEW */}
-                  <div className="col-span-2">
-                    <span className="text-blue-600 font-medium">Active Bookings:</span>{" "}
-                    <span className="text-gray-800">{customerInfo.bookings?.length || 0}</span>
-                  </div>
+                  
+                  {customerInfo.customer?.account_number && (
+                    <div className="col-span-2">
+                      <span className="text-blue-600 font-medium">Active Bookings:</span>{" "}
+                      <span className="text-gray-800">{customerInfo.bookings?.length || 0}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
