@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import type { Message } from "@/lib/types";
 import ReactMarkdown from "react-markdown";
 import { SeatMap } from "./seat-map";
+import { BusinessForm } from "./business-form";
 import { LogOut } from "lucide-react";
 
 interface ChatProps {
@@ -18,6 +19,7 @@ export function Chat({ messages, onSendMessage, isLoading, customerInfo }: ChatP
   const [inputText, setInputText] = useState("");
   const [isComposing, setIsComposing] = useState(false);
   const [showSeatMap, setShowSeatMap] = useState(false);
+  const [showBusinessForm, setShowBusinessForm] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<string | undefined>(undefined);
 
   // Auto-scroll to bottom when messages or loading indicator change
@@ -25,13 +27,23 @@ export function Chat({ messages, onSendMessage, isLoading, customerInfo }: ChatP
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
   }, [messages, isLoading]);
 
-  // Watch for special seat map trigger message
+  // Watch for special trigger messages
   useEffect(() => {
-    const hasTrigger = messages.some(
+    const hasSeatMapTrigger = messages.some(
       (m) => m.role === "assistant" && m.content === "DISPLAY_SEAT_MAP"
     );
-    if (hasTrigger && !selectedSeat) {
+    const hasBusinessFormTrigger = messages.some(
+      (m) => m.role === "assistant" && m.content === "DISPLAY_BUSINESS_FORM"
+    );
+    
+    if (hasSeatMapTrigger && !selectedSeat) {
       setShowSeatMap(true);
+      setShowBusinessForm(false);
+    }
+    
+    if (hasBusinessFormTrigger) {
+      setShowBusinessForm(true);
+      setShowSeatMap(false);
     }
   }, [messages, selectedSeat]);
 
@@ -46,6 +58,17 @@ export function Chat({ messages, onSendMessage, isLoading, customerInfo }: ChatP
       setSelectedSeat(seat);
       setShowSeatMap(false);
       onSendMessage(`I would like seat ${seat}`);
+    },
+    [onSendMessage]
+  );
+
+  const handleBusinessSubmit = useCallback(
+    (businessData: any) => {
+      setShowBusinessForm(false);
+      const formattedData = Object.entries(businessData)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+      onSendMessage(`Please add my business with the following details: ${formattedData}`);
     },
     [onSendMessage]
   );
@@ -89,7 +112,7 @@ export function Chat({ messages, onSendMessage, isLoading, customerInfo }: ChatP
       {/* Messages */}
       <div className="flex-1 overflow-y-auto min-h-0 md:px-4 pt-4 pb-20">
         {messages.map((msg, idx) => {
-          if (msg.content === "DISPLAY_SEAT_MAP") return null;
+          if (msg.content === "DISPLAY_SEAT_MAP" || msg.content === "DISPLAY_BUSINESS_FORM") return null;
           return (
             <div
               key={idx}
@@ -114,6 +137,16 @@ export function Chat({ messages, onSendMessage, isLoading, customerInfo }: ChatP
               <SeatMap
                 onSeatSelect={handleSeatSelect}
                 selectedSeat={selectedSeat}
+              />
+            </div>
+          </div>
+        )}
+        {showBusinessForm && (
+          <div className="flex justify-start mb-5">
+            <div className="mr-4 rounded-[16px] rounded-bl-[4px] md:mr-24">
+              <BusinessForm
+                onSubmit={handleBusinessSubmit}
+                onCancel={() => setShowBusinessForm(false)}
               />
             </div>
           </div>
