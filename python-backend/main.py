@@ -33,8 +33,8 @@ class AirlineAgentContext(BaseModel):
     flight_id: Optional[str] = None
     customer_email: Optional[str] = None
     customer_bookings: List[Dict[str, Any]] = Field(default_factory=list)
-    is_conference_attendee: Optional[bool] = False
-    conference_name: Optional[str] = None
+    is_conference_attendee: Optional[bool] = True
+    conference_name: Optional[str] = "Aviation Tech Summit 2025"
     registration_id: Optional[str] = None
     user_details: Optional[Dict[str, Any]] = Field(default_factory=dict)
     user_id: Optional[str] = None
@@ -88,155 +88,177 @@ async def load_customer_context(account_number: str) -> AirlineAgentContext:
 
 @function_tool(
     name_override="faq_lookup_tool", 
-    description_override="Comprehensive lookup for airline policies, services, aircraft information, and travel procedures."
+    description_override="Comprehensive lookup for airline policies, services, aircraft information, and general travel questions."
 )
 async def faq_lookup_tool(question: str) -> str:
     """Lookup answers to frequently asked questions about airline services."""
     q = question.lower()
     
-    # Baggage related queries
+    # Baggage related questions
     if any(word in q for word in ["bag", "baggage", "luggage", "carry", "check"]):
         return (
             "**Comprehensive Baggage Information:**\n\n"
-            "**Carry-on Allowance:**\n"
-            "• Maximum weight: 50 pounds (22.7 kg)\n"
-            "• Dimensions: 22\" x 14\" x 9\" (56 x 36 x 23 cm)\n"
-            "• One personal item allowed (purse, laptop bag)\n\n"
+            "**Carry-on Baggage:**\n"
+            "- Maximum weight: 7 kg (15 lbs)\n"
+            "- Dimensions: 55cm x 40cm x 20cm (22\" x 16\" x 8\")\n"
+            "- One carry-on bag + one personal item allowed\n"
+            "- Liquids: 3-1-1 rule (containers ≤100ml in 1L clear bag)\n\n"
             "**Checked Baggage:**\n"
-            "• First bag: Included in most fares\n"
-            "• Additional bags: Fees apply ($50-$150 per bag)\n"
-            "• Weight limit: 50 lbs (23 kg) per bag\n"
-            "• Overweight fees: $100-$200 for bags 51-70 lbs\n\n"
-            "**Restricted Items:**\n"
-            "• Liquids over 3.4 oz in carry-on\n"
-            "• Sharp objects, tools over 7 inches\n"
-            "• Flammable materials, batteries over 100Wh\n"
-            "• Full list available on our website security section"
+            "- Economy: 23 kg (50 lbs) included\n"
+            "- Business: 32 kg (70 lbs) included\n"
+            "- Additional bags: $50-150 depending on route\n"
+            "- Oversized/overweight fees apply\n\n"
+            "**Prohibited Items:**\n"
+            "- Sharp objects, flammable liquids, batteries >100Wh\n"
+            "- Full list available on our website\n\n"
+            "**Special Items:**\n"
+            "- Sports equipment, musical instruments: advance booking required\n"
+            "- Medical equipment: documentation needed"
         )
     
-    # Aircraft and seating information
-    elif any(word in q for word in ["seats", "plane", "aircraft", "cabin", "configuration"]):
+    # Aircraft and seating questions
+    elif any(word in q for word in ["seats", "plane", "aircraft", "how many", "configuration"]):
         return (
             "**Aircraft Configuration Details:**\n\n"
-            "**Total Capacity:** 120 passengers\n\n"
-            "**Class Breakdown:**\n"
-            "• **Business Class:** 22 seats (Rows 1-4)\n"
-            "  - Premium service, priority boarding\n"
-            "  - Complimentary meals and beverages\n"
-            "  - Extra legroom and wider seats\n\n"
-            "• **Economy Plus:** 20 seats (Rows 5-8)\n"
-            "  - Additional legroom (4+ inches)\n"
-            "  - Priority boarding after business\n"
-            "  - Upgrade fee: $75-$150\n\n"
-            "• **Standard Economy:** 78 seats (Rows 9-24)\n"
-            "  - Standard 31-inch pitch\n"
-            "  - Complimentary snacks and beverages\n\n"
+            "**Total Capacity:** 180 seats\n\n"
+            "**Class Distribution:**\n"
+            "- **Business Class:** 20 seats (Rows 1-5)\n"
+            "  - 2-2 configuration\n"
+            "  - 42-inch seat pitch\n"
+            "  - Lie-flat seats\n\n"
+            "- **Premium Economy:** 24 seats (Rows 6-8)\n"
+            "  - 3-3 configuration\n"
+            "  - 36-inch seat pitch\n"
+            "  - Extra legroom and amenities\n\n"
+            "- **Economy Class:** 136 seats (Rows 9-32)\n"
+            "  - 3-3 configuration\n"
+            "  - 31-inch seat pitch\n"
+            "  - Standard service\n\n"
             "**Special Rows:**\n"
-            "• **Exit Rows (4, 16):** Extra legroom, restrictions apply\n"
-            "• **Window/Aisle preference:** Available during booking\n"
-            "• **Middle seats:** Last to be assigned"
+            "- **Exit Rows:** 12, 13, 26 (extra legroom, restrictions apply)\n"
+            "- **Preferred Seats:** Front economy rows (small fee)\n\n"
+            "**Seat Selection:**\n"
+            "- Free: 24 hours before departure\n"
+            "- Paid: Available at booking or anytime before"
         )
     
     # WiFi and connectivity
-    elif any(word in q for word in ["wifi", "internet", "connection", "online"]):
+    elif any(word in q for word in ["wifi", "internet", "connectivity", "online"]):
         return (
-            "**In-Flight Connectivity Services:**\n\n"
-            "**WiFi Access:**\n"
-            "• Network: 'Airline-WiFi-Premium'\n"
-            "• Coverage: Gate-to-gate on most flights\n"
-            "• Speed: Up to 25 Mbps for streaming\n\n"
-            "**Pricing Options:**\n"
-            "• **Complimentary:** Basic browsing and messaging\n"
-            "• **Premium ($12):** Streaming, video calls\n"
-            "• **Monthly Pass ($49):** Unlimited on all flights\n\n"
-            "**Device Support:**\n"
-            "• Smartphones, tablets, laptops\n"
-            "• Up to 2 devices per passenger\n"
-            "• Technical support available via call button\n\n"
-            "**Entertainment:**\n"
-            "• Free access to airline entertainment portal\n"
-            "• 200+ movies, TV shows, music\n"
-            "• Live TV on select flights"
+            "**In-Flight Connectivity:**\n\n"
+            "**WiFi Service:**\n"
+            "- Network: 'AirlineWiFi-Free'\n"
+            "- Coverage: Gate-to-gate on most flights\n"
+            "- Speed: Up to 25 Mbps\n"
+            "- Cost: Complimentary for all passengers\n\n"
+            "**Usage Guidelines:**\n"
+            "- Streaming: Available (may be slower during peak usage)\n"
+            "- Video calls: Permitted with headphones\n"
+            "- Downloads: Limited to preserve bandwidth\n\n"
+            "**Device Compatibility:**\n"
+            "- Smartphones, tablets, laptops supported\n"
+            "- Maximum 2 devices per passenger\n\n"
+            "**Troubleshooting:**\n"
+            "- Clear browser cache if connection issues\n"
+            "- Contact crew for technical support"
         )
     
     # Check-in procedures
-    elif any(word in q for word in ["check", "boarding", "gate", "departure"]):
+    elif any(word in q for word in ["check", "checkin", "boarding", "gate"]):
         return (
-            "**Complete Check-in Guide:**\n\n"
+            "**Check-in Information:**\n\n"
             "**Online Check-in:**\n"
-            "• Available: 24 hours before departure\n"
-            "• Mobile app or website\n"
-            "• Select seats, add services\n"
-            "• Mobile boarding pass available\n\n"
+            "- Available: 24 hours to 1 hour before departure\n"
+            "- Mobile app or website\n"
+            "- Select seats, add services\n"
+            "- Mobile boarding pass available\n\n"
             "**Airport Check-in:**\n"
-            "• **Domestic flights:** 2 hours before departure\n"
-            "• **International flights:** 3 hours before departure\n"
-            "• Self-service kiosks available\n"
-            "• Staffed counters for assistance\n\n"
+            "- Domestic flights: 2 hours before departure\n"
+            "- International flights: 3 hours before departure\n"
+            "- Self-service kiosks available\n"
+            "- Counter service for special assistance\n\n"
             "**Boarding Process:**\n"
-            "• Group 1: Business class, elite members\n"
-            "• Group 2: Economy Plus, families with children\n"
-            "• Groups 3-5: Economy by row numbers\n\n"
+            "- Group 1: Business class, elite members\n"
+            "- Group 2: Premium economy, families with children\n"
+            "- Groups 3-5: Economy by row numbers\n\n"
             "**Required Documents:**\n"
-            "• Government-issued photo ID\n"
-            "• Passport for international travel\n"
-            "• Boarding pass (mobile or printed)"
+            "- Valid government ID (domestic)\n"
+            "- Passport + visa if required (international)\n"
+            "- Boarding pass (mobile or printed)"
         )
     
     # Cancellation and refund policies
-    elif any(word in q for word in ["cancel", "refund", "change", "reschedule"]):
+    elif any(word in q for word in ["cancel", "refund", "change", "modify"]):
         return (
             "**Cancellation & Change Policies:**\n\n"
             "**24-Hour Rule:**\n"
-            "• Free cancellation within 24 hours of booking\n"
-            "• Applies to all fare types\n"
-            "• Full refund to original payment method\n\n"
+            "- Free cancellation within 24 hours of booking\n"
+            "- Applies to all fare types\n"
+            "- Full refund to original payment method\n\n"
             "**Fare Type Policies:**\n"
-            "• **Refundable fares:** Full refund minus $25 processing fee\n"
-            "• **Non-refundable fares:** Credit for future travel\n"
-            "• **Basic Economy:** No changes allowed\n\n"
-            "**Change Fees:**\n"
-            "• Same-day changes: $75\n"
-            "• Advance changes: $150-$300\n"
-            "• Fare difference may apply\n\n"
-            "**Special Circumstances:**\n"
-            "• Weather delays: No fees for changes\n"
-            "• Medical emergencies: Documentation required\n"
-            "• Military deployment: Waived fees with orders"
+            "**Basic Economy:**\n"
+            "- No changes or cancellations after 24 hours\n"
+            "- Exception: death in family (documentation required)\n\n"
+            "**Standard Economy:**\n"
+            "- Changes: $200 fee + fare difference\n"
+            "- Cancellations: $300 fee, remainder as credit\n\n"
+            "**Premium/Business:**\n"
+            "- Changes: $100 fee + fare difference\n"
+            "- Cancellations: $150 fee, remainder as credit\n\n"
+            "**Flexible Fares:**\n"
+            "- Free changes and cancellations\n"
+            "- Full refund available\n\n"
+            "**Travel Credits:**\n"
+            "- Valid for 12 months from issue date\n"
+            "- Can be used for future bookings\n"
+            "- Transferable to immediate family"
         )
     
-    # Flight status and delays
-    elif any(word in q for word in ["status", "delay", "time", "schedule"]):
+    # Food and dining
+    elif any(word in q for word in ["food", "meal", "dining", "eat", "drink"]):
         return (
-            "**Flight Status Information:**\n\n"
-            "**Real-time Updates:**\n"
-            "• Check flight status on website/app\n"
-            "• SMS/email notifications available\n"
-            "• Gate information posted 2 hours before departure\n\n"
-            "**Delay Compensation:**\n"
-            "• **1-2 hours:** Meal vouchers\n"
-            "• **3+ hours:** Hotel accommodation if overnight\n"
-            "• **Cancellations:** Rebooking on next available flight\n\n"
-            "**Weather Delays:**\n"
-            "• Safety is our top priority\n"
-            "• No fees for changes due to weather\n"
-            "• Travel insurance recommended\n\n"
-            "**Passenger Rights:**\n"
-            "• Right to compensation for controllable delays\n"
-            "• Right to rebooking or refund\n"
-            "• Customer service available 24/7"
+            "**In-Flight Dining:**\n\n"
+            "**Business Class:**\n"
+            "- Multi-course meals with wine pairing\n"
+            "- À la carte menu on long-haul flights\n"
+            "- Premium beverages included\n\n"
+            "**Premium Economy:**\n"
+            "- Enhanced meal service\n"
+            "- Complimentary alcoholic beverages\n"
+            "- Priority meal service\n\n"
+            "**Economy Class:**\n"
+            "- Complimentary snacks on flights >2 hours\n"
+            "- Meals on flights >4 hours\n"
+            "- Purchase options available\n\n"
+            "**Special Dietary Requirements:**\n"
+            "- Vegetarian, vegan, gluten-free available\n"
+            "- Religious dietary requirements accommodated\n"
+            "- Request at least 24 hours in advance\n\n"
+            "**Beverages:**\n"
+            "- Soft drinks, coffee, tea complimentary\n"
+            "- Alcoholic beverages: included in premium classes\n"
+            "- Purchase required in economy"
         )
     
-    return (
-        "I can provide detailed information about:\n"
-        "• **Baggage policies** - carry-on, checked, restrictions\n"
-        "• **Aircraft information** - seating, configuration, amenities\n"
-        "• **WiFi and connectivity** - pricing, speed, entertainment\n"
-        "• **Check-in procedures** - online, airport, boarding\n"
-        "• **Cancellation policies** - refunds, changes, fees\n"
-        "• **Flight status** - delays, compensation, passenger rights\n\n"
-        "Please ask about any specific topic, and I'll provide comprehensive details!"
-    )
+    # General travel and policies
+    else:
+        return (
+            "**General Travel Information:**\n\n"
+            "I can help with detailed information about:\n"
+            "- **Baggage policies** (carry-on, checked, restrictions)\n"
+            "- **Aircraft information** (seating, configuration, amenities)\n"
+            "- **WiFi and connectivity** (free service, usage guidelines)\n"
+            "- **Check-in procedures** (online, airport, boarding)\n"
+            "- **Cancellation policies** (refunds, changes, fees)\n"
+            "- **Dining services** (meals, special diets, beverages)\n\n"
+            "**Additional Services:**\n"
+            "- Seat selection and upgrades\n"
+            "- Special assistance requests\n"
+            "- Unaccompanied minor service\n"
+            "- Pet travel policies\n"
+            "- Loyalty program benefits\n\n"
+            "Please ask about any specific topic, and I'll provide detailed information!"
+        )
 
 @function_tool
 async def update_seat(
@@ -254,7 +276,7 @@ async def update_seat(
 
 @function_tool(
     name_override="flight_status_tool",
-    description_override="Get comprehensive real-time flight information including status, delays, gates, and passenger services."
+    description_override="Get real-time flight status information including delays, gate assignments, and departure times."
 )
 async def flight_status_tool(flight_number: str) -> str:
     """Lookup the current status for a flight."""
@@ -294,7 +316,7 @@ async def flight_status_tool(flight_number: str) -> str:
 
 @function_tool(
     name_override="get_booking_details",
-    description_override="Retrieve comprehensive booking information including passenger details, flight info, and seat assignments."
+    description_override="Retrieve comprehensive booking information using confirmation number."
 )
 async def get_booking_details(
     context: RunContextWrapper[AirlineAgentContext], confirmation_number: str
@@ -344,7 +366,7 @@ async def get_booking_details(
 
 @function_tool(
     name_override="display_seat_map",
-    description_override="Show an interactive seat map for seat selection with real-time availability."
+    description_override="Show an interactive seat map for seat selection."
 )
 async def display_seat_map(
     context: RunContextWrapper[AirlineAgentContext]
@@ -354,7 +376,7 @@ async def display_seat_map(
 
 @function_tool(
     name_override="cancel_flight",
-    description_override="Cancel a flight booking and process refunds according to fare rules."
+    description_override="Cancel a flight booking and update the booking status."
 )
 async def cancel_flight(
     context: RunContextWrapper[AirlineAgentContext]
@@ -381,6 +403,7 @@ async def cancel_flight(
     else:
         return f"❌ **Cancellation Failed**\n\nI couldn't cancel the booking with confirmation number **{confirmation_number}**. This could be because:\n- The booking is already cancelled\n- The confirmation number is incorrect\n- The booking cannot be cancelled at this time\n\nPlease contact customer service for assistance with your cancellation."
 
+# Conference Schedule Tools
 @function_tool(
     name_override="get_conference_sessions",
     description_override="Search and retrieve detailed conference session information with flexible filtering options."
@@ -432,7 +455,7 @@ async def get_conference_sessions(
     )
 
     if not sessions:
-        return "No conference sessions found matching your criteria. Please try a different query or check the spelling of speaker names, topics, or room names."
+        return "No conference sessions found matching your criteria. Please try a different search or ask about all speakers, tracks, or rooms."
     
     response_lines = [f"**Conference Sessions Found ({len(sessions)} results)**\n"]
     
@@ -521,7 +544,7 @@ async def get_all_rooms(context: RunContextWrapper[AirlineAgentContext]) -> str:
 # Networking Agent Tools
 @function_tool(
     name_override="search_businesses",
-    description_override="Search for businesses by industry, location, company name, or sector."
+    description_override="Search for businesses by industry sector, location, company name, or sub-sector."
 )
 async def search_businesses(
     context: RunContextWrapper[AirlineAgentContext],
@@ -530,7 +553,7 @@ async def search_businesses(
     company_name: Optional[str] = None,
     sub_sector: Optional[str] = None
 ) -> str:
-    """Search for businesses based on various criteria."""
+    """Search businesses in the network by various criteria."""
     businesses = await db_client.search_businesses(
         industry_sector=industry_sector,
         location=location,
@@ -539,80 +562,87 @@ async def search_businesses(
     )
     
     if not businesses:
-        return "No businesses found matching your search criteria. Please try different search terms or broaden your search."
+        return "No businesses found matching your search criteria. Try broadening your search terms or ask about all businesses in the network."
     
-    response = f"**Business Directory ({len(businesses)} results)**\n\n"
+    response_lines = [f"**Business Directory Search Results ({len(businesses)} found)**\n"]
     
     for i, business in enumerate(businesses, 1):
         details = business.get("details", {})
         user_info = business.get("users", {})
         
-        response += f"**{i}. {details.get('companyName', 'N/A')}**\n"
-        response += f"   **Industry:** {details.get('industrySector', 'N/A')}\n"
-        response += f"   **Sector:** {details.get('subSector', 'N/A')}\n"
-        response += f"   **Location:** {details.get('location', 'N/A')}\n"
-        response += f"   **Contact:** {user_info.get('user_name', 'N/A')}\n"
-        response += f"   **Position:** {details.get('positionTitle', 'N/A')}\n"
+        company_name = details.get("companyName", "Unknown Company")
+        industry = details.get("industrySector", "N/A")
+        location = details.get("location", "N/A")
+        position = details.get("positionTitle", "N/A")
         
-        if details.get('briefDescription'):
-            response += f"   **Description:** {details['briefDescription']}\n"
+        business_info = f"**{i}. {company_name}**\n"
+        business_info += f"   **Industry:** {industry}\n"
+        business_info += f"   **Location:** {location}\n"
+        business_info += f"   **Contact:** {user_info.get('user_name', 'N/A')} ({position})\n"
         
-        if details.get('web'):
-            response += f"   **Website:** {details['web']}\n"
+        if details.get("subSector"):
+            business_info += f"   **Sector:** {details['subSector']}\n"
+        if details.get("briefDescription"):
+            business_info += f"   **About:** {details['briefDescription'][:100]}...\n"
         
-        response += "\n"
+        response_lines.append(business_info)
     
-    response += "Would you like more details about any specific business or need help with networking?"
-    return response
+    response_lines.append("\nWould you like more details about any specific business or need help with other networking queries?")
+    return "\n".join(response_lines)
 
 @function_tool(
     name_override="get_user_businesses",
-    description_override="Get all businesses associated with the current user."
+    description_override="Get all businesses registered by the current user."
 )
 async def get_user_businesses(context: RunContextWrapper[AirlineAgentContext]) -> str:
     """Get all businesses for the current user."""
     user_id = context.context.user_id
     if not user_id:
-        return "❌ **User Not Found**\n\nI couldn't find your user information. Please ensure you're logged in properly."
+        return "❌ **User Not Found**\n\nI couldn't identify your user account. Please ensure you're logged in properly."
     
     businesses = await db_client.get_user_businesses(user_id)
     
     if not businesses:
-        return "**No Businesses Found**\n\nYou don't have any businesses registered yet. Would you like to add a new business to your profile?"
+        return "**No Businesses Found**\n\nYou haven't registered any businesses yet. Would you like to add a new business to your profile?"
     
-    response = f"**Your Businesses ({len(businesses)} total)**\n\n"
+    response_lines = [f"**Your Registered Businesses ({len(businesses)} total)**\n"]
     
     for i, business in enumerate(businesses, 1):
         details = business.get("details", {})
         
-        response += f"**{i}. {details.get('companyName', 'N/A')}**\n"
-        response += f"   **Industry:** {details.get('industrySector', 'N/A')}\n"
-        response += f"   **Sector:** {details.get('subSector', 'N/A')}\n"
-        response += f"   **Location:** {details.get('location', 'N/A')}\n"
-        response += f"   **Position:** {details.get('positionTitle', 'N/A')}\n"
-        response += f"   **Established:** {details.get('establishmentYear', 'N/A')}\n"
+        company_name = details.get("companyName", "Unknown Company")
+        industry = details.get("industrySector", "N/A")
+        position = details.get("positionTitle", "N/A")
+        established = details.get("establishmentYear", "N/A")
         
-        if details.get('briefDescription'):
-            response += f"   **Description:** {details['briefDescription']}\n"
+        business_info = f"**{i}. {company_name}**\n"
+        business_info += f"   **Your Role:** {position}\n"
+        business_info += f"   **Industry:** {industry}\n"
+        business_info += f"   **Established:** {established}\n"
         
-        response += "\n"
+        if details.get("location"):
+            business_info += f"   **Location:** {details['location']}\n"
+        if details.get("briefDescription"):
+            business_info += f"   **Description:** {details['briefDescription'][:100]}...\n"
+        
+        response_lines.append(business_info)
     
-    response += "Would you like to add another business or get more details about any of these?"
-    return response
+    response_lines.append("\nWould you like to add another business or get more details about any of these?")
+    return "\n".join(response_lines)
 
 @function_tool(
     name_override="display_business_form",
-    description_override="Display an interactive form for adding a new business."
+    description_override="Show an interactive business registration form."
 )
 async def display_business_form(context: RunContextWrapper[AirlineAgentContext]) -> str:
-    """Display a business registration form."""
+    """Trigger the UI to show an interactive business form."""
     return "DISPLAY_BUSINESS_FORM"
 
 @function_tool(
-    name_override="add_new_business",
+    name_override="add_business",
     description_override="Add a new business to the user's profile."
 )
-async def add_new_business(
+async def add_business(
     context: RunContextWrapper[AirlineAgentContext],
     company_name: str,
     industry_sector: str,
@@ -633,7 +663,7 @@ async def add_new_business(
     organization_id = context.context.organization_id
     
     if not user_id:
-        return "❌ **User Not Found**\n\nI couldn't find your user information. Please ensure you're logged in properly."
+        return "❌ **User Not Found**\n\nI couldn't identify your user account. Please ensure you're logged in properly."
     
     business_details = {
         "companyName": company_name,
@@ -647,6 +677,7 @@ async def add_new_business(
         "productsOrServices": products_or_services
     }
     
+    # Add optional fields if provided
     if website:
         business_details["web"] = website
     if annual_turnover_range:
@@ -659,36 +690,9 @@ async def add_new_business(
     success = await db_client.add_business(user_id, business_details, organization_id)
     
     if success:
-        return f"✅ **Business Added Successfully**\n\n**{company_name}** has been added to your business profile.\n\n**Details:**\n• Industry: {industry_sector}\n• Sector: {sub_sector}\n• Location: {location}\n• Your Role: {position_title}\n\nYour business is now visible in the business directory for networking opportunities!"
+        return f"✅ **Business Added Successfully**\n\n**{company_name}** has been added to your business profile!\n\n**Details:**\n- Industry: {industry_sector}\n- Location: {location}\n- Your Role: {position_title}\n\nYour business is now visible in the network directory. Other members can discover and connect with you!"
     else:
         return "❌ **Failed to Add Business**\n\nThere was an error adding your business. Please try again or contact support for assistance."
-
-@function_tool(
-    name_override="get_organization_info",
-    description_override="Get information about the user's organization."
-)
-async def get_organization_info(context: RunContextWrapper[AirlineAgentContext]) -> str:
-    """Get organization information for the user."""
-    organization_id = context.context.organization_id
-    if not organization_id:
-        return "❌ **Organization Not Found**\n\nI couldn't find your organization information."
-    
-    org_info = await db_client.get_organization_info(organization_id)
-    
-    if not org_info:
-        return "❌ **Organization Details Not Available**\n\nI couldn't retrieve your organization details at this time."
-    
-    details = org_info.get("details", {})
-    
-    response = f"**Organization Information**\n\n"
-    response += f"**Name:** {org_info.get('name', 'N/A')}\n"
-    response += f"**Created:** {org_info.get('created_at', 'N/A')[:10]}\n"
-    
-    if details:
-        response += f"**Details:** {details.get('name', 'N/A')}\n"
-    
-    response += "\nIs there anything specific about your organization you'd like to know?"
-    return response
 
 # =========================
 # HOOKS
@@ -707,17 +711,17 @@ async def on_flight_status_handoff(context: RunContextWrapper[AirlineAgentContex
     pass
 
 async def on_schedule_handoff(context: RunContextWrapper[AirlineAgentContext]) -> None:
-    """Proactively greet conference attendees or ask for schedule details."""
+    """Proactively greet conference attendees."""
     ctx = context.context
     if ctx.is_conference_attendee and ctx.conference_name:
         return f"Welcome to the {ctx.conference_name}! I have access to the complete conference schedule and can help you find sessions by speaker, topic, track, room, or time. What would you like to know?"
     return "I can help you with the conference schedule. I can search by speaker name, topic, track, room, date, or time range. What information are you looking for?"
 
 async def on_networking_handoff(context: RunContextWrapper[AirlineAgentContext]) -> None:
-    """Greet users for networking and business directory services."""
+    """Greet users for networking services."""
     ctx = context.context
     user_name = ctx.passenger_name or "there"
-    return f"Hello {user_name}! I'm here to help you with networking and business connections. I can help you search the business directory, manage your business listings, and connect with other professionals. What would you like to do?"
+    return f"Hello {user_name}! I'm here to help you with business networking. I can help you find businesses, view your registered companies, or add new businesses to your profile. What would you like to do?"
 
 # =========================
 # GUARDRAILS
@@ -736,10 +740,15 @@ guardrail_agent = Agent(
         "The relevant topics include:\n"
         "1. **Airline customer service:** flights, bookings, baggage, check-in, flight status, seat changes, cancellations, policies, loyalty programs, and general air travel inquiries\n"
         "2. **Conference information:** Aviation Tech Summit 2025 conference schedule, speakers, sessions, rooms, tracks, dates, times, topics, or any conference-related details\n"
-        "3. **Networking and business:** business directory searches, company information, professional networking, adding businesses, industry sectors, business connections, organizational information\n"
+        "3. **Business networking:** business directory searches, company information, industry sectors, professional connections, business registration, networking opportunities\n"
         "4. **Conversational elements:** greetings, acknowledgments, follow-up questions, clarifications related to previously discussed relevant topics\n\n"
         "**IMPORTANT:** Even if a previous response was 'no results found' or required further information, follow-up questions about the same topic remain relevant.\n\n"
-        "**BUSINESS QUERIES:** All questions about businesses, companies, industries, networking, professional connections, and organizational information are RELEVANT.\n\n"
+        "**BUSINESS NETWORKING EXAMPLES (RELEVANT):**\n"
+        "- 'Who are the diamond dealers?' (searching for businesses in jewelry/diamond sector)\n"
+        "- 'Show me IT companies' (searching for businesses in IT sector)\n"
+        "- 'Find healthcare companies in Chennai' (location-based business search)\n"
+        "- 'What companies do I have?' (user's business portfolio)\n"
+        "- 'Add new business' (business registration)\n\n"
         "Evaluate ONLY the most recent user message. Ignore previous chat history for this evaluation.\n\n"
         "Your output must be a JSON object with two fields: 'is_relevant' (boolean) and 'reasoning' (string explaining your decision)."
     ),
@@ -750,7 +759,7 @@ guardrail_agent = Agent(
 async def relevance_guardrail(
     context: RunContextWrapper[None], agent: Agent, input: str | list[TResponseInputItem]
 ) -> GuardrailFunctionOutput:
-    """Guardrail to check if input is relevant to airline, conference, or networking topics."""
+    """Guardrail to check if input is relevant to airline topics."""
     result = await Runner.run(guardrail_agent, input, context=context.context)
     final = result.final_output_as(RelevanceOutput)
     return GuardrailFunctionOutput(output_info=final, tripwire_triggered=not final.is_relevant)
@@ -928,19 +937,17 @@ def schedule_agent_instructions(
         "1. **General speaker queries** (e.g., 'who are the speakers', 'list speakers', 'tell me about speakers'): Use `get_all_speakers` immediately\n"
         "2. **General track queries** (e.g., 'what tracks', 'list tracks', 'available tracks'): Use `get_all_tracks` immediately\n"
         "3. **General room queries** (e.g., 'what rooms', 'list rooms', 'conference rooms'): Use `get_all_rooms` immediately\n"
-        "4. **Specific speaker searches** (e.g., 'Alice Wonderland', 'tell me about Alice'): Use `get_conference_sessions` with speaker_name filter\n"
+        "4. **Specific speaker searches** (e.g., 'Alice Wonderland', 'tell me about Alice', 'Yoda Jedi'): Use `get_conference_sessions` with speaker_name filter\n"
         "5. **Specific topic searches**: Use `get_conference_sessions` with topic filter\n"
         "6. **Date/time searches**: Use `get_conference_sessions` with appropriate date/time filters\n"
-        "7. **Room-specific schedules**: Use `get_conference_sessions` with conference_room_name filter\n"
-        "8. **Track-specific sessions**: Use `get_conference_sessions` with track_name filter\n\n"
+        "7. **No results responses**: If any tool returns 'No sessions found', relay that exact message without adding assumptions\n\n"
         
         "**CRITICAL:** \n"
         "- NEVER hardcode information about speakers, sessions, or any conference data\n"
         "- ALWAYS fetch real data from the database using the appropriate tools\n"
-        "- If a tool returns no results, relay that exact message without adding assumptions\n"
+        "- If a tool returns no results, inform the user accurately without making assumptions\n"
         "- For questions about specific speakers, ALWAYS use the tools to search for them\n"
-        "- Be helpful and comprehensive in your responses\n"
-        "- Answer questions about conference logistics, schedules, and general information\n\n"
+        "- Be helpful and comprehensive in your responses\n\n"
         
         "For non-conference questions, transfer back to the triage agent."
     )
@@ -963,47 +970,45 @@ def networking_agent_instructions(
     user_name = ctx.passenger_name or "Customer"
     
     instructions = f"{RECOMMENDED_PROMPT_PREFIX}\n"
-    instructions += f"You are the Networking and Business Directory Specialist. You help users connect with other professionals, search the business directory, and manage their business listings.\n\n"
+    instructions += f"You are the Business Networking Specialist for the Aviation Tech Summit 2025. You help attendees discover business opportunities, connect with other professionals, and manage their business profiles.\n\n"
     instructions += f"**Current User:** {user_name}\n\n"
     
     instructions += (
-        "**YOUR CAPABILITIES:**\n"
-        "- Search business directory by industry, location, company name, or sector\n"
-        "- Help users find networking opportunities and business connections\n"
-        "- Manage user's business listings and profiles\n"
-        "- Add new businesses to user profiles\n"
-        "- Provide organization and role information\n\n"
+        "**AVAILABLE TOOLS & CAPABILITIES:**\n"
+        "- `search_businesses`: Find businesses by industry, location, company name, or sector\n"
+        "- `get_user_businesses`: View the user's registered businesses\n"
+        "- `display_business_form`: Show interactive form to add new business\n"
+        "- `add_business`: Add a new business to user's profile\n\n"
         
-        "**AVAILABLE TOOLS:**\n"
-        "- `search_businesses`: Find businesses by various criteria\n"
-        "- `get_user_businesses`: Show user's current business listings\n"
-        "- `display_business_form`: Show form to add new business\n"
-        "- `add_new_business`: Add a new business to user's profile\n"
-        "- `get_organization_info`: Get user's organization details\n\n"
-        
-        "**QUERY HANDLING:**\n"
-        "1. **Business searches** (e.g., 'find healthcare companies', 'businesses in Chennai'): Use `search_businesses` with appropriate filters\n"
+        "**QUERY HANDLING RULES:**\n"
+        "1. **Business searches** (e.g., 'diamond dealers', 'IT companies', 'healthcare in Chennai'): Use `search_businesses` with appropriate filters\n"
         "2. **User's businesses** (e.g., 'my businesses', 'what companies do I have'): Use `get_user_businesses`\n"
-        "3. **Adding businesses** (e.g., 'add new business', 'register my company'): Use `display_business_form`\n"
-        "4. **Organization info** (e.g., 'my organization', 'company details'): Use `get_organization_info`\n"
-        "5. **General networking** (e.g., 'how to network', 'find connections'): Provide guidance and use search tools\n\n"
+        "3. **Add business** (e.g., 'add new business', 'register company'): Use `display_business_form`\n"
+        "4. **Industry searches**: Extract industry/sector from query and search accordingly\n"
+        "5. **Location searches**: Extract location and search businesses in that area\n\n"
         
-        "**IMPORTANT:**\n"
-        "- Always fetch real data from the database - never hardcode business information\n"
-        "- Be helpful in connecting users with relevant businesses and professionals\n"
-        "- Encourage networking and professional connections\n"
-        "- For non-networking questions, transfer back to the triage agent\n\n"
+        "**SEARCH EXAMPLES:**\n"
+        "- 'Who are the diamond dealers?' → search_businesses(sub_sector='diamond')\n"
+        "- 'Show me IT companies' → search_businesses(industry_sector='IT')\n"
+        "- 'Healthcare companies in Chennai' → search_businesses(industry_sector='Healthcare', location='Chennai')\n"
+        "- 'Find Medway hospitals' → search_businesses(company_name='Medway')\n\n"
         
-        "Be professional, helpful, and focused on facilitating business connections and networking opportunities."
+        "**CRITICAL:**\n"
+        "- ALWAYS use tools to fetch real data from the database\n"
+        "- NEVER hardcode business information\n"
+        "- Be helpful in connecting people with relevant businesses\n"
+        "- Encourage networking and business connections\n\n"
+        
+        "For non-networking questions, transfer back to the triage agent."
     )
     return instructions
 
 networking_agent = Agent[AirlineAgentContext](
     name="Networking Agent",
     model="groq/llama3-8b-8192",
-    handoff_description="A specialist agent for business networking, directory searches, and professional connections.",
+    handoff_description="A business networking specialist for discovering companies, managing business profiles, and facilitating professional connections.",
     instructions=networking_agent_instructions,
-    tools=[search_businesses, get_user_businesses, display_business_form, add_new_business, get_organization_info],
+    tools=[search_businesses, get_user_businesses, display_business_form, add_business],
     input_guardrails=[relevance_guardrail, jailbreak_guardrail],
     handoffs=[],
 )
@@ -1024,13 +1029,13 @@ triage_agent = Agent[AirlineAgentContext](
         "- **Seat Booking Agent:** 'change seat', 'seat map', 'seat selection', 'different seat', 'move seat'\n"
         "- **Flight Status Agent:** 'flight status', 'flight delay', 'gate information', 'departure time', 'what time', 'when does my flight'\n"
         "- **Cancellation Agent:** 'cancel flight', 'cancel booking', 'refund', 'cancel my trip'\n"
-        "- **FAQ Agent:** 'baggage', 'wifi', 'how many seats', 'aircraft info', 'check-in', 'policies'\n\n"
+        "- **FAQ Agent:** 'baggage', 'wifi', 'how many seats', 'aircraft info', 'check-in', 'policies', 'food', 'meal'\n\n"
         
-        "**2. CONFERENCE INFORMATION (SECONDARY PRIORITY)**\n"
-        "- **Schedule Agent:** 'conference', 'speaker', 'session', 'track', 'room', 'schedule', 'Aviation Tech Summit', any speaker names\n\n"
+        "**2. CONFERENCE INFORMATION**\n"
+        "- **Schedule Agent:** 'conference', 'speaker', 'session', 'track', 'room', 'schedule', 'Aviation Tech Summit', 'Alice Wonderland', 'Yoda Jedi', any speaker names, 'who are all the speakers'\n\n"
         
-        "**3. NETWORKING & BUSINESS (TERTIARY PRIORITY)**\n"
-        "- **Networking Agent:** 'business', 'company', 'networking', 'directory', 'industry', 'professional', 'organization', 'add business', 'my businesses'\n\n"
+        "**3. BUSINESS NETWORKING**\n"
+        "- **Networking Agent:** 'diamond dealers', 'IT companies', 'healthcare companies', 'my businesses', 'add business', 'business directory', 'find companies', 'networking', 'Medway hospitals'\n\n"
         
         "**ROUTING RULES:**\n"
         "- **Be decisive:** Don't ask clarifying questions - route immediately based on keywords\n"
@@ -1044,9 +1049,9 @@ triage_agent = Agent[AirlineAgentContext](
         "- 'I want to cancel my flight' → `transfer_to_cancellation_agent()`\n"
         "- 'How many seats are on this plane?' → `transfer_to_faq_agent()`\n"
         "- 'Tell me about Alice Wonderland' → `transfer_to_schedule_agent()`\n"
-        "- 'Who are the speakers?' → `transfer_to_schedule_agent()`\n"
-        "- 'Find healthcare companies' → `transfer_to_networking_agent()`\n"
-        "- 'Add my business' → `transfer_to_networking_agent()`\n\n"
+        "- 'Who are the diamond dealers?' → `transfer_to_networking_agent()`\n"
+        "- 'Show me IT companies' → `transfer_to_networking_agent()`\n"
+        "- 'Who are all the speakers?' → `transfer_to_schedule_agent()`\n\n"
         
         "Be professional, efficient, and customer-focused. Your goal is to get customers to the right specialist quickly."
     ),
